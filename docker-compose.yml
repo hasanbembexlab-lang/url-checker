@@ -1,0 +1,8 @@
+services:
+  url-checker:
+    build: .
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./screenshots:/app/screenshots
+    restart: unless-stopped

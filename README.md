@@ -23,6 +23,18 @@ python -m uvicorn monitor:app
 
 Then open <http://127.0.0.1:8000>.
 
+## Run with Docker
+
+From this folder, build and start the app with Docker Compose:
+
+```powershell
+docker compose up --build
+```
+
+Then open <http://localhost:3003>. The container installs Chromium for browser
+checks, and screenshots are saved to the local `screenshots` folder. Stop the
+app with `Ctrl+C`; run `docker compose down` to remove the stopped container.
+
 Alternatively, run `npm run dev`. The script uses the project virtual
 environment when available, installs missing Python requirements and
 Playwright Chromium, then starts the Python FastAPI server. On Windows,

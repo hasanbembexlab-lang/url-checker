@@ -1,0 +1,9 @@
+{
+  "name": "website-diagnostic-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build": "node scripts/build.js"
+  }
+}

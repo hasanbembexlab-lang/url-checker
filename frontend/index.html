@@ -112,6 +112,7 @@
     .finding-count { color: #8892a4; font-size: 11px; white-space: nowrap; }
     .chevron { color: #a2aabc; font-size: 19px; }
     .detail-panel { margin-top: 16px; overflow: hidden; }
+    .result-detail-dropdown { margin: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; }
     .detail-top { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; align-items: start; justify-content: space-between; gap: 15px; }
     .detail-url { color: var(--muted); font-size: 11px; margin-top: 4px; overflow-wrap: anywhere; }
     .pipeline-wrap { padding: 17px 20px 18px; border-bottom: 1px solid var(--line); }
@@ -219,7 +220,6 @@
               </div></div>
             </div>
           </section>
-          <section class="panel detail-panel" id="detail-panel" hidden></section>
         </div>
       </section>
     </main>
@@ -230,7 +230,6 @@
     const input = document.querySelector("#urls");
     const button = document.querySelector("#submit-button");
     const list = document.querySelector("#results-list");
-    const detailPanel = document.querySelector("#detail-panel");
     const notice = document.querySelector("#notice");
     const progressCopy = document.querySelector("#progress-copy");
     let results = [];
@@ -263,16 +262,15 @@
         list.innerHTML = `<div class="empty"><div class="empty-inner"><div class="empty-art">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/><path d="m16.5 16.5 4 4M8 11h6M11 8v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
           </div><h3>Nothing checked yet</h3><p>Enter a website address to see a detailed health report.</p></div></div>`;
-        detailPanel.hidden = true;
         return;
       }
       list.innerHTML = results.map((result) => {
         const kind = statusKind(result.Status);
         const isSelected = selectedUrl === result.Website;
-        return `<article class="result-row${isSelected ? " selected" : ""}" data-url="${esc(result.Website)}" tabindex="0" role="button" aria-label="View details for ${esc(result.Website)}">
+        return `<article class="result-row${isSelected ? " selected" : ""}" data-url="${esc(result.Website)}" tabindex="0" role="button" aria-label="View details for ${esc(result.Website)}" aria-expanded="${isSelected}">
           <div class="site-cell"><div class="site-url">${esc(result.Website)}</div><div class="site-meta">${esc(result.Platform || "Unknown platform")}${result.Seconds ? ` · ${esc(result.Seconds)}s` : ""}</div></div>
           <span class="badge ${kind}">${esc(result.Status || "Checking")}</span>
-          <span class="finding-count">${(result.Findings || []).length} findings</span><span class="chevron">›</span></article>`;
+          <span class="finding-count">${(result.Findings || []).length} findings</span><span class="chevron">${isSelected ? "⌄" : "›"}</span></article>${isSelected ? `<section class="panel detail-panel result-detail-dropdown">${detailsMarkup(result)}</section>` : ""}`;
       }).join("");
       list.querySelectorAll(".result-row").forEach((row) => {
         const select = () => showDetails(row.dataset.url);
@@ -281,7 +279,7 @@
           if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); }
         });
       });
-      if (selectedUrl && results.some((item) => item.Website === selectedUrl)) showDetails(selectedUrl);
+      if (selectedUrl && !results.some((item) => item.Website === selectedUrl)) selectedUrl = null;
     }
 
     function pipelineMarkup(pipeline = {}) {
@@ -308,20 +306,20 @@
         <div class="finding-content">${info.map(([label, value]) => `<div><div class="field-title">${esc(label)}</div><div class="field-copy">${esc(value)}</div></div>`).join("")}${fixes}</div></article>`;
     }
 
-    function showDetails(url) {
-      selectedUrl = url;
-      const result = results.find((item) => item.Website === url);
-      if (!result) return;
-      detailPanel.hidden = false;
+    function detailsMarkup(result) {
       const findings = result.Findings || [];
       const screenshot = result.Screenshot
         ? `/api/screenshots/${encodeURIComponent(result.Screenshot.split(/[\\/]/).pop())}` : "";
-      detailPanel.innerHTML = `<div class="detail-top"><div><h2 class="panel-title">Diagnostic report</h2><div class="detail-url">${esc(result.Website)}</div></div><span class="badge ${statusKind(result.Status)}">${esc(result.Status)}</span></div>
+      return `<div class="detail-top"><div><h2 class="panel-title">Diagnostic report</h2><div class="detail-url">${esc(result.Website)}</div></div><span class="badge ${statusKind(result.Status)}">${esc(result.Status)}</span></div>
         <div class="pipeline-wrap"><div class="section-label">Check pipeline</div><div class="pipeline">${pipelineMarkup(result.Pipeline)}</div></div>
         <div class="finding-section">${findings.length ? `<div class="section-label">${findings.length} finding${findings.length === 1 ? "" : "s"} · highest severity first</div>${findings.map(findingMarkup).join("")}` : `<div class="section-label">All checks passed</div><div class="field-copy">No issues were found for this website.</div>`}
         ${(result.Passed || []).length ? `<div class="section-label" style="margin-top:20px">Checks passed</div><div class="passed-list">${result.Passed.map((item) => `<div class="passed-item">${esc(item)}</div>`).join("")}</div>` : ""}
         ${screenshot ? `<div class="section-label" style="margin-top:20px">Browser screenshot</div><img class="screenshot" src="${screenshot}" alt="Screenshot of ${esc(result.Website)}" loading="lazy" onerror="this.hidden=true">` : ""}</div>`;
-      list.querySelectorAll(".result-row").forEach((row) => row.classList.toggle("selected", row.dataset.url === selectedUrl));
+    }
+
+    function showDetails(url) {
+      selectedUrl = selectedUrl === url ? null : url;
+      renderResults();
     }
 
     function setBusy(busy) {

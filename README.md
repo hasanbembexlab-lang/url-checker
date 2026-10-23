@@ -32,8 +32,9 @@ docker compose up --build
 ```
 
 Then open <http://localhost:3003>. The container installs Chromium for browser
-checks, and screenshots are saved to the local `screenshots` folder. Stop the
-app with `Ctrl+C`; run `docker compose down` to remove the stopped container.
+checks. Screenshots are kept in temporary memory, cleared when a new valid
+batch starts, and lost when the container stops. Stop the app with `Ctrl+C`;
+run `docker compose down` to remove the stopped container.
 
 Alternatively, run `npm run dev`. The script uses the project virtual
 environment when available, installs missing Python requirements and

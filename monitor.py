@@ -1931,6 +1931,14 @@ def _json_result(result):
     }
 
 
+def _clear_screenshots():
+    if not os.path.isdir(SCREENSHOT_DIR):
+        return
+    for entry in os.scandir(SCREENSHOT_DIR):
+        if entry.is_file() and entry.name.lower().endswith(".png"):
+            os.remove(entry.path)
+
+
 async def _run_job(job_id, urls):
     job = jobs[job_id]
     job["status"] = "running"
@@ -1986,6 +1994,12 @@ async def create_check(request: CheckRequest):
             status_code=422,
             detail=f"Only complete HTTP or HTTPS website URLs are supported: {', '.join(invalid_urls)}",
         )
+
+    try:
+        _clear_screenshots()
+    except OSError as exc:
+        logging.exception("Unable to clear screenshots before check")
+        raise HTTPException(status_code=500, detail="Unable to clear previous screenshots.") from exc
 
     job_id = str(uuid4())
     jobs[job_id] = {

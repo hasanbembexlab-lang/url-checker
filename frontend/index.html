@@ -142,6 +142,15 @@
     .passed-list { display: grid; gap: 6px; color: #5b687c; font-size: 11px; }
     .passed-item::before { content: "✓"; margin-right: 8px; color: var(--green); font-weight: 700; }
     .screenshot { width: 100%; max-height: 480px; object-fit: contain; object-position: top; display: block; background: #f2f4f8; border: 1px solid var(--line); border-radius: 9px; }
+    .quick-summary { margin-top: 20px; }
+    .summary-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 9px; }
+    .summary-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .summary-table th, .summary-table td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid #eff2f6; }
+    .summary-table th { background: #f8faff; color: #69768b; font-size: 10px; font-weight: 700; }
+    .summary-table td { color: #465268; font-size: 11px; }
+    .summary-table tbody tr:last-child td { border-bottom: 0; }
+    .summary-problem { color: var(--ink); font-weight: 700; }
+    .summary-explanation { margin-top: 3px; color: var(--muted); }
     .notice { display: none; padding: 11px 13px; margin-bottom: 14px; border-radius: 9px; font-size: 12px; }
     .notice.error { display: block; color: #a53939; background: #fff0ef; }
     .spinner { width: 14px; height: 14px; border: 2px solid #ffffff70; border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
@@ -306,6 +315,17 @@
         <div class="finding-content">${info.map(([label, value]) => `<div><div class="field-title">${esc(label)}</div><div class="field-copy">${esc(value)}</div></div>`).join("")}${fixes}</div></article>`;
     }
 
+    function summaryMarkup(findings) {
+      const rows = findings.length
+        ? findings.map((finding) => {
+          const action = (finding.fixes || [])[0] || `Ask ${finding.owner || "your site administrator"} to review this.`;
+          return `<tr><td><div class="summary-problem">${esc(finding.problem || "Website issue")}</div>${finding.plain ? `<div class="summary-explanation">${esc(finding.plain)}</div>` : ""}</td><td>${esc(action)}</td></tr>`;
+        }).join("")
+        : `<tr><td><div class="summary-problem">No problems found</div></td><td>No action needed.</td></tr>`;
+      return `<section class="quick-summary"><div class="section-label">Quick summary</div><div class="summary-table-wrap"><table class="summary-table">
+        <thead><tr><th scope="col">Problem</th><th scope="col">What to do</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    }
+
     function detailsMarkup(result) {
       const findings = result.Findings || [];
       const screenshot = result.Screenshot
@@ -314,7 +334,8 @@
         <div class="pipeline-wrap"><div class="section-label">Check pipeline</div><div class="pipeline">${pipelineMarkup(result.Pipeline)}</div></div>
         <div class="finding-section">${findings.length ? `<div class="section-label">${findings.length} finding${findings.length === 1 ? "" : "s"} · highest severity first</div>${findings.map(findingMarkup).join("")}` : `<div class="section-label">All checks passed</div><div class="field-copy">No issues were found for this website.</div>`}
         ${(result.Passed || []).length ? `<div class="section-label" style="margin-top:20px">Checks passed</div><div class="passed-list">${result.Passed.map((item) => `<div class="passed-item">${esc(item)}</div>`).join("")}</div>` : ""}
-        ${screenshot ? `<div class="section-label" style="margin-top:20px">Browser screenshot</div><img class="screenshot" src="${screenshot}" alt="Screenshot of ${esc(result.Website)}" loading="lazy" onerror="this.hidden=true">` : ""}</div>`;
+        ${screenshot ? `<div class="section-label" style="margin-top:20px">Browser screenshot</div><img class="screenshot" src="${screenshot}" alt="Screenshot of ${esc(result.Website)}" loading="lazy" onerror="this.hidden=true">` : ""}
+        ${summaryMarkup(findings)}</div>`;
     }
 
     function showDetails(url) {
